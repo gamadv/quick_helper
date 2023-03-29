@@ -25,4 +25,9 @@ function removeFalsyValues(arr: Array<any>) {
   return arr.filter(Boolean)
 }
 
-export { arrayToTest, removeObjectWithId, mockArray, removeDuplicates, removeFalsyValues };
+function sumFromInput(input: string): number {
+  const values = input.split(',').map(Number);
+  return values.reduce((total, value) => total + value, 0);
+}
+
+export { arrayToTest, removeObjectWithId, mockArray, removeDuplicates, removeFalsyValues, sumFromInput };
