@@ -1,0 +1,13 @@
+body {
+  height: 100%;
+  background: #282a2b;
+}
+
+body div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 100%;
+  background-color: red;
+}
