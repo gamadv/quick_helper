@@ -1,18 +1,17 @@
-
 const arrayToTest = [
-  { id: 1, name: "John" },
-  { id: 2, name: "Kate" },
-  { id: 3, name: "Peter" },
-];
+  { id: 1, name: 'John' },
+  { id: 2, name: 'Kate' },
+  { id: 3, name: 'Peter' },
+]
 
 const mockArray = Array.from({ length: 10 }, () =>
-  Math.floor(Math.random() * 10)
-);
+  Math.floor(Math.random() * 10),
+)
 
 function removeObjectWithId(arr: any, id: any, returnObject?: boolean) {
   return arr.filter((arrItem: any) =>
-    returnObject ? arrItem.id === id : arrItem.id !== id
-  );
+    returnObject ? arrItem.id === id : arrItem.id !== id,
+  )
 }
 
 function removeDuplicates(arr: Array<any>) {
@@ -26,8 +25,15 @@ function removeFalsyValues(arr: Array<any>) {
 }
 
 function sumFromInput(input: string): number {
-  const values = input.split(',').map(Number);
-  return values.reduce((total, value) => total + value, 0);
+  const values = input.split(',').map(Number)
+  return values.reduce((total, value) => total + value, 0)
 }
 
-export { arrayToTest, removeObjectWithId, mockArray, removeDuplicates, removeFalsyValues, sumFromInput };
+export {
+  arrayToTest,
+  removeObjectWithId,
+  mockArray,
+  removeDuplicates,
+  removeFalsyValues,
+  sumFromInput,
+}
