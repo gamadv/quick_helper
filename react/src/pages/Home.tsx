@@ -14,10 +14,10 @@ export function Home() {
           <a href="#">as Anchor</a>
         </PolyButton>
       </section>
-      <section>
+      <section className="flex items-center max-w-md justify-between m-auto gap-4">
         <InputStyled />
       </section>
-      <section>
+      <section className="flex items-center max-w-md justify-between m-auto gap-4">
         <Testing />
       </section>
     </main>
