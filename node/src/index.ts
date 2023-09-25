@@ -1,7 +1,24 @@
-let s1 = "Hello";
-let s2 = "**********there";
-let s3;
+import { startParseInvestiments } from './investmentsParser/parser'
 
+const teste = [
+  {
+    nome: 'videoIndex',
+    valor: 'https://www.youtube.com/watch?v=EzsI3zWA8pE',
+  },
+  {
+    nome: 'qtdAulas',
+    valor: '400',
+  },
+  {
+    nome: 'qtdSerie',
+    valor: '60',
+  },
+  {
+    nome: 'qtdProfessor',
+    valor: '40',
+  },
+]
 
+const toConsole = teste.filter((param) => param.nome !== 'videoIndex')
 
-console.log(s3 = s1 && s2)
+console.log('🚀 ~ file: index.ts:531 ~ toConsole:', toConsole);
