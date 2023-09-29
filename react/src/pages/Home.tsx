@@ -1,6 +1,7 @@
 import { PolyButton } from "../components/PolyButton";
 import { Testing } from "../components/Testing";
 import InputStyled from "../components/UI/InputStyled";
+import { CSVReader } from "../components/CSVReader";
 
 export function Home() {
   return (
@@ -19,6 +20,9 @@ export function Home() {
       </section>
       <section className="flex items-center max-w-md justify-between m-auto gap-4">
         <Testing />
+      </section>
+      <section className="flex items-center max-w-md justify-between m-auto gap-4">
+        <CSVReader />
       </section>
     </main>
   );
