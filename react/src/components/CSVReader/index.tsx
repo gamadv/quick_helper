@@ -47,9 +47,6 @@ export const CSVReader: React.FC = () => {
     }
   };
 
-  console.log("🚀 ~ file: csvreader.tsx:7 ~ csvData:", csvData);
-  console.log("🚀 ~ file: csvreader.tsx:7 ~ errors:", errors);
-
   return (
     <div>
       <input type="file" onChange={handleFileUpload} />
