@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "json": "json-server --watch src/__mocks__/db2.json --port 3002",
     "preview": "vite preview",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
@@ -15,6 +16,7 @@
     "@radix-ui/react-slot": "^1.0.0",
     "@storybook/addon-a11y": "^6.5.12",
     "axios": "^1.0.0",
+    "json-server": "^0.17.4",
     "phosphor-react": "^1.4.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
@@ -41,6 +43,7 @@
     "autoprefixer": "^10.4.12",
     "babel-loader": "^8.2.5",
     "clsx": "^1.2.1",
+    "miragejs": "^0.1.47",
     "msw": "^0.47.4",
     "msw-storybook-addon": "^1.6.3",
     "postcss": "^8.4.17",
