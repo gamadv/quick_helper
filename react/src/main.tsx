@@ -1,12 +1,16 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import { GlobalContextProvider } from "./context/GlobalContext";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { ChakraProvider } from '@chakra-ui/react'
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+import { GlobalContextProvider } from './context/GlobalContext'
+import App from './App'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <GlobalContextProvider>
-      <App />
+      <ChakraProvider>
+        <App />
+      </ChakraProvider>
     </GlobalContextProvider>
-  </React.StrictMode>
-);
+  </React.StrictMode>,
+)
