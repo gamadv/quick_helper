@@ -21,4 +21,4 @@ const teste = [
 
 const toConsole = teste.filter((param) => param.nome !== 'videoIndex')
 
-console.log('🚀 ~ file: index.ts:531 ~ toConsole:', toConsole);
+console.log('🚀 ~ file: index.ts:531 ~ toConsole:', toConsole)
