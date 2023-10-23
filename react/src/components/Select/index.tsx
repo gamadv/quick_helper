@@ -5,9 +5,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useClickAway } from "src/hooks/useClickAway";
 
 import { Container, Content, SelectContentProps, SelectList } from "./styles";
+import { useClickAway } from "../../hooks/useClickAway";
 
 export type SelectProps = SelectContentProps & {
   icon?: ReactNode;
