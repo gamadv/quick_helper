@@ -7,6 +7,7 @@ import { GetPosts } from '../services/api'
 import { Input } from '@chakra-ui/react'
 
 export function Home() {
+  const jsonServerIsOn = false
   async function fetchData() {
     const myresponse = await GetPosts()
 
@@ -14,6 +15,8 @@ export function Home() {
   }
 
   useEffect(() => {
+    if (!jsonServerIsOn) return
+
     fetchData()
   }, [])
   return (
