@@ -1,3 +1,7 @@
-const toConsole = 'console'
+import { cpfValidator } from '../../utils'
 
-console.log('🚀 ~ file: index.ts:531 ~ toConsole:', toConsole)
+const toConsole = cpfValidator('2222222222')
+const toConsole2 = cpfValidator('860.521.095-81')
+
+console.log('🚀 ~ toConsole:', toConsole)
+console.log('🚀 ~ toConsole2:', toConsole2)

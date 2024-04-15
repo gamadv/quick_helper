@@ -4,8 +4,12 @@ import {
   removeDuplicates,
   removeFalsyValues,
 } from './arrayHacks'
-import { convertStringToCapitalize, converteStringToArray } from './stringHacks'
+import {
+  convertStringToCapitalize,
+  converteStringToArray,
+} from './stringHacks'
 import { converteMinutesToHoursAndMinutes } from './timeHacks'
+import { cpfValidator } from './validators'
 
 export {
   arrayToTest,
@@ -15,4 +19,5 @@ export {
   converteMinutesToHoursAndMinutes,
   removeDuplicates,
   removeFalsyValues,
+  cpfValidator,
 }
