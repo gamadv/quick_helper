@@ -13,9 +13,6 @@ const products = [
   'azul-P',
 ]
 
-module.exports = () => {
-  // Código aqui
-
   const productsRestructered = (products = []) => {
     return products.reduce((accumulator, currentValue) => {
       const product = currentValue.split('-')
@@ -32,5 +29,3 @@ module.exports = () => {
       return accumulator
     }, {})
   }
-  return productsRestructered(products)
-}
