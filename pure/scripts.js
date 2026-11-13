@@ -1,5 +1,5 @@
-const mydiv = document.getElementById("container")
+const mydiv = document.getElementById('container')
 
-mydiv.addEventListener("click", () => {
-    alert("The div with ID 'container' was clicked!");
-});
+mydiv.addEventListener('click', () => {
+  alert("The div with ID 'container' was clicked!")
+})

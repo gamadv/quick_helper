@@ -1,0 +1,544 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --text: #1d2330;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --accent-text: #ffffff;
+  --ok: #15803d;
+  --warn: #b45309;
+  --error: #dc2626;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font:
+    14px/1.5 system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111318;
+    --surface: #181b22;
+    --border: #2a2f3a;
+    --text: #e6e8ee;
+    --muted: #8b93a3;
+    --accent: #8b93f8;
+    --accent-text: #111318;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --error: #f87171;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Layout: sidebar | editor | result. Sizes come from CSS variables set by App.tsx (drag handles). */
+
+.lab {
+  --sidebar-width: 220px;
+  --editor-share: 1fr;
+  --result-share: 1fr;
+  display: grid;
+  grid-template-areas: 'side editor result';
+  grid-template-columns:
+    var(--sidebar-width) minmax(0, var(--editor-share))
+    minmax(0, var(--result-share));
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+}
+
+.sidebar {
+  grid-area: side;
+}
+
+.editor-pane {
+  grid-area: editor;
+  border-right: 1px solid var(--border);
+}
+
+.result-pane {
+  grid-area: result;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Drag handles overlap the pane borders (same grid area, pulled out by a negative margin). */
+
+.resize-handle {
+  z-index: 10;
+  touch-action: none;
+  transition: background-color 0.15s 0.1s;
+}
+
+.resize-handle:hover,
+.resize-handle:active {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.resize-sidebar,
+.resize-split {
+  justify-self: end;
+  width: 6px;
+  margin-right: -3px;
+  cursor: col-resize;
+}
+
+.resize-sidebar {
+  grid-area: side;
+}
+
+.resize-split {
+  grid-area: editor;
+}
+
+.resize-console {
+  position: absolute;
+  top: -3px;
+  right: 0;
+  left: 0;
+  height: 6px;
+  cursor: row-resize;
+}
+
+body.resizing {
+  user-select: none;
+}
+
+body.resizing iframe {
+  pointer-events: none;
+}
+
+.editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar */
+
+.sidebar {
+  overflow: auto;
+  padding: 12px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sidebar h1 {
+  margin: 0 8px 8px;
+  font-size: 15px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 4px 8px;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar a {
+  display: block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: inherit;
+  font: 13px/1.6 var(--mono);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.sidebar a.support {
+  color: var(--muted);
+}
+
+.sidebar a .dir {
+  opacity: 0.6;
+}
+
+.sidebar a:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.sidebar a[aria-current] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.new-file {
+  margin: 0 0 6px;
+}
+
+.new-file input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.6 var(--mono);
+}
+
+.new-file .hint {
+  margin: 4px 0 0;
+}
+
+.hint {
+  margin: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hint.error {
+  color: var(--error);
+}
+
+/* Toolbars and buttons */
+
+.toolbar {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 12px;
+  min-height: 45px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.toolbar-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font: 13px var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button.file-name {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border-color: transparent;
+  background: none;
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+button.file-name:hover:not(:disabled) {
+  border-color: var(--border);
+}
+
+.file-name .pencil {
+  margin-left: 6px;
+  color: var(--muted);
+  opacity: 0;
+}
+
+.file-name:hover .pencil,
+.file-name:focus-visible .pencil {
+  opacity: 1;
+}
+
+.rename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rename input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.rename-error {
+  overflow: hidden;
+  color: var(--error);
+  font:
+    12px system-ui,
+    sans-serif;
+  text-overflow: ellipsis;
+}
+
+.dirty {
+  color: var(--accent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button,
+.button {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled),
+.button:hover {
+  border-color: var(--muted);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+button.danger {
+  color: var(--error);
+}
+
+button.icon {
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 22px;
+}
+
+button.icon:hover {
+  color: var(--accent);
+}
+
+button.link {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+
+button.link:hover {
+  color: var(--text);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.banner {
+  margin: 0;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--error) 15%, transparent);
+  color: var(--error);
+  font-size: 13px;
+}
+
+/* Result pane */
+
+.console {
+  flex: 1;
+  margin: 0;
+  padding: 12px 16px;
+  overflow: auto;
+  font: 13px/1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.console .stderr {
+  color: var(--error);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status {
+  padding: 6px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status.ok {
+  color: var(--ok);
+}
+
+.status.error {
+  color: var(--error);
+}
+
+.preview {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 80px;
+  border: 0;
+}
+
+/* The console keeps its dragged height but shrinks (down to 40px) when the pane gets smaller. */
+.frame-console {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.frame-console header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 12px;
+}
+
+.count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.count.error {
+  background: var(--error);
+  color: var(--surface);
+}
+
+.logs {
+  flex: 0 1 auto;
+  min-height: 40px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font: 12px/1.5 var(--mono);
+}
+
+.log {
+  padding: 2px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.log.warn {
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+  color: var(--warn);
+}
+
+.log.error {
+  background: color-mix(in srgb, var(--error) 8%, transparent);
+  color: var(--error);
+}
+
+.empty {
+  margin: auto;
+  padding: 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Smaller screens: editor above result, then everything stacked. */
+
+/* Keep the 1000px breakpoint in sync with STACKED in App.tsx. */
+@media (max-width: 1000px) {
+  .lab {
+    grid-template-areas:
+      'side editor'
+      'side result';
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-rows:
+      minmax(0, var(--editor-share))
+      minmax(0, var(--result-share));
+  }
+
+  .editor-pane {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resize-split {
+    align-self: end;
+    justify-self: stretch;
+    width: auto;
+    height: 6px;
+    margin: 0 0 -3px;
+    cursor: row-resize;
+  }
+}
+
+@media (max-width: 640px) {
+  .lab {
+    grid-template-areas: 'side' 'editor' 'result';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      auto minmax(0, var(--editor-share))
+      minmax(0, var(--result-share));
+  }
+
+  .sidebar {
+    max-height: 30vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resize-sidebar {
+    display: none;
+  }
+}
