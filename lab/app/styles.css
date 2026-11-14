@@ -221,6 +221,24 @@ body.resizing iframe {
   color: var(--error);
 }
 
+/* Browser mode: backup tools at the bottom of the sidebar. */
+.storage {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.storage .hint {
+  margin-bottom: 8px;
+}
+
+.storage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 8px 8px;
+}
+
 /* Toolbars and buttons */
 
 .toolbar {

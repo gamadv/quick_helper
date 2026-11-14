@@ -1,6 +1,6 @@
-// Editor buffers (Monaco models) for playground files, with dirty tracking and disk sync.
+// Editor buffers (Monaco models) for playground files, with dirty tracking and storage sync.
 import { CODE_FILE } from '../shared.ts'
-import { expectOk, fileUrl, labFetch } from './api.ts'
+import { backend } from './backend/index.ts'
 import { monaco, setTypeDefinitions } from './monaco.ts'
 
 type Entry = { model: monaco.editor.ITextModel; savedVersion: number }
@@ -26,23 +26,15 @@ function track(file: string, content: string) {
   return entry
 }
 
-const readFile = async (file: string) =>
-  (await expectOk(await labFetch(fileUrl(file)))).text()
-
 let ready: Promise<void> | undefined
 
 /** Loads type definitions and every code file once, so cross-file IntelliSense works. */
 export function initWorkspace() {
   ready ??= (async () => {
-    const [types, sources] = await Promise.all(
-      ['/__lab/types', '/__lab/sources'].map(
-        async (url) =>
-          (await (await expectOk(await labFetch(url))).json()) as Record<
-            string,
-            string
-          >,
-      ),
-    )
+    const [types, sources] = await Promise.all([
+      backend.loadTypes(),
+      backend.readSources(),
+    ])
     setTypeDefinitions(types)
     for (const [file, content] of Object.entries(sources)) track(file, content)
   })().catch((err: unknown) => {
@@ -59,7 +51,7 @@ export async function openModel(file: string) {
   await initWorkspace()
   const existing = entries.get(file)
   if (existing) return existing.model
-  const content = await readFile(file)
+  const content = await backend.readFile(file)
   return track(file, content).model
 }
 
@@ -90,12 +82,7 @@ async function saveNow(file: string) {
   const entry = entries.get(file)
   if (!entry || !isDirty(file)) return
   const version = entry.model.getAlternativeVersionId()
-  await expectOk(
-    await labFetch(fileUrl(file), {
-      method: 'PUT',
-      body: entry.model.getValue(),
-    }),
-  )
+  await backend.saveFile(file, entry.model.getValue())
   if (entries.get(file) !== entry) return
   entry.savedVersion = version
   notify()
@@ -118,11 +105,11 @@ export function forget(file: string) {
   notify()
 }
 
-/** Pulls in a change made outside the lab (e.g. in VS Code), unless the buffer has unsaved edits. */
-export async function syncFromDisk(file: string) {
+/** Pulls in a change made elsewhere (VS Code, another tab), unless the buffer has unsaved edits. */
+export async function syncFromStorage(file: string) {
   const entry = entries.get(file)
   if (!entry || isDirty(file)) return
-  const content = await readFile(file).catch(() => undefined)
+  const content = await backend.readFile(file).catch(() => undefined)
   // The buffer may have been edited, dropped or replaced while we were reading.
   if (content === undefined || entries.get(file) !== entry || isDirty(file))
     return
@@ -143,7 +130,7 @@ export async function syncFileList(files: string[]) {
   const added = files.filter((f) => CODE_FILE.test(f) && !entries.has(f))
   await Promise.all(
     added.map(async (f) => {
-      const content = await readFile(f).catch(() => undefined)
+      const content = await backend.readFile(f).catch(() => undefined)
       if (content !== undefined) track(f, content)
     }),
   )

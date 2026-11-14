@@ -1,5 +1,7 @@
 import { useState, useSyncExternalStore, type FormEvent } from 'react'
 import { isRunnable, SECTIONS, type LabFiles, type Section } from '../shared.ts'
+import { backend } from './backend/index.ts'
+import { StorageTools } from './StorageTools.tsx'
 import { dirtyFiles, subscribe } from './workspace.ts'
 
 const LABELS: Record<Section, { label: string; placeholder: string }> = {
@@ -113,6 +115,7 @@ export function Sidebar({
             )}
           </nav>
         ))}
+      {backend.storage && <StorageTools storage={backend.storage} />}
     </aside>
   )
 }

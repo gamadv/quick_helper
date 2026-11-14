@@ -1,0 +1,13 @@
+# Static, browser-only build of the lab (see lab/build.ts).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# Hashed file names: safe to cache for good.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

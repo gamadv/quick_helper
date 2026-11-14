@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { sectionOf } from '../shared.ts'
+import { backend } from './backend/index.ts'
 import { clamp, ResizeHandle } from './ResizeHandle.tsx'
 import { Toolbar } from './Toolbar.tsx'
 import { useStoredState } from './useStoredState.ts'
@@ -13,14 +15,42 @@ export function Preview({ file }: { file: string }) {
   const frame = useRef<HTMLIFrameElement>(null)
   const logsRef = useRef<HTMLDivElement>(null)
   const [logs, setLogs] = useState<Log[]>([])
+  // The browser backend needs its service worker before the page can load.
+  const [ready, setReady] = useState(backend.mode === 'local')
+  const [error, setError] = useState<string>()
   const [consoleOpen, setConsoleOpen] = useStoredState('lab:console', true)
   const [consoleHeight, setConsoleHeight] = useStoredState(
     'lab:console-height',
     CONSOLE_HEIGHT.initial,
   )
-  const src = file.startsWith('react/')
-    ? `/lab/frame/react.html?file=${encodeURIComponent(file)}`
-    : `/${encodeURI(file)}`
+  const src = backend.previewUrl(file)
+
+  useEffect(() => {
+    if (ready) return
+    backend.ready().then(
+      () => setReady(true),
+      (err: unknown) =>
+        setError(err instanceof Error ? err.message : String(err)),
+    )
+  }, [ready])
+
+  // Without Vite's HMR, reload the page when a file of its section is saved.
+  useEffect(() => {
+    if (backend.hotPreview) return
+    let timer: ReturnType<typeof setTimeout>
+    const unsubscribe = backend.onFileChange((changed) => {
+      if (sectionOf(changed) !== sectionOf(file)) return
+      clearTimeout(timer)
+      timer = setTimeout(
+        () => frame.current?.contentWindow?.location.reload(),
+        150,
+      )
+    })
+    return () => {
+      clearTimeout(timer)
+      unsubscribe()
+    }
+  }, [file])
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -58,7 +88,11 @@ export function Preview({ file }: { file: string }) {
           Nova aba
         </a>
       </Toolbar>
-      <iframe ref={frame} className="preview" src={src} title={file} />
+      {ready ? (
+        <iframe ref={frame} className="preview" src={src} title={file} />
+      ) : (
+        <p className="empty">{error ?? 'Preparando a prévia…'}</p>
+      )}
       <section className="frame-console">
         {consoleOpen && (
           <ResizeHandle

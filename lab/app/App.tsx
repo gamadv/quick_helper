@@ -13,7 +13,7 @@ import {
   type LabFiles,
   type Section,
 } from '../shared.ts'
-import { expectOk, fileUrl, labFetch } from './api.ts'
+import { backend } from './backend/index.ts'
 import { Editor } from './Editor.tsx'
 import { NodeRunner } from './NodeRunner.tsx'
 import { Preview } from './Preview.tsx'
@@ -27,7 +27,7 @@ import {
   forget,
   save,
   syncFileList,
-  syncFromDisk,
+  syncFromStorage,
 } from './workspace.ts'
 
 // Keep in sync with the media query in styles.css that stacks the editor above the result.
@@ -37,22 +37,22 @@ const SPLIT = { initial: 0.5, min: 0.15, max: 0.85 }
 
 function useLabFiles() {
   const [files, setFiles] = useState<LabFiles>()
+  const [error, setError] = useState<string>()
 
   const refresh = useCallback(async () => {
-    const res = await expectOk(await labFetch('/__lab/files'))
-    const next = (await res.json()) as LabFiles
+    const next = await backend.listFiles()
     setFiles(next)
     return next
   }, [])
 
   useEffect(() => {
-    void refresh()
-    const hot = import.meta.hot
-    hot?.on('lab:files', setFiles)
-    return () => hot?.off('lab:files', setFiles)
+    refresh().catch((err: unknown) =>
+      setError(err instanceof Error ? err.message : String(err)),
+    )
+    return backend.onFilesChange(setFiles)
   }, [refresh])
 
-  return [files, refresh] as const
+  return [files, refresh, error] as const
 }
 
 function useHash() {
@@ -97,7 +97,7 @@ function useTarget(current: string | undefined, all: string[]) {
 }
 
 export function App() {
-  const [files, refreshFiles] = useLabFiles()
+  const [files, refreshFiles, filesError] = useLabFiles()
   const all = useMemo(
     () => (files ? SECTIONS.flatMap((s) => files[s]) : []),
     [files],
@@ -123,12 +123,10 @@ export function App() {
     if (files) syncFileList(all).catch(() => undefined)
   }, [files, all])
 
-  useEffect(() => {
-    const hot = import.meta.hot
-    const onChange = ({ file }: { file: string }) => void syncFromDisk(file)
-    hot?.on('lab:change', onChange)
-    return () => hot?.off('lab:change', onChange)
-  }, [])
+  useEffect(
+    () => backend.onFileChange((file) => void syncFromStorage(file)),
+    [],
+  )
 
   // With auto-save off, switching files keeps unsaved buffers around: warn before losing them.
   useEffect(() => {
@@ -144,13 +142,7 @@ export function App() {
     let rel = name.replace(/^\/+/, '').replace(new RegExp(`^${section}/`), '')
     if (!/\.\w+$/.test(rel.split('/').pop()!)) rel += DEFAULT_EXTENSION[section]
     const file = `${section}/${rel}`
-    const res = await labFetch(fileUrl(file), {
-      method: 'POST',
-      body: templateFor(file),
-    })
-    if (res.status === 409) throw new Error(`${file} já existe.`)
-    await expectOk(res)
-    const created = ((await res.json()) as { path: string }).path // normalized
+    const created = await backend.createFile(file, templateFor(file)) // normalized
     await refreshFiles()
     navigate(created)
   }
@@ -159,13 +151,7 @@ export function App() {
     const destination = to.trim().replace(/^\/+/, '')
     if (!destination || destination === from) return
     await save(from) // the moved file must carry unsaved edits
-    const res = await labFetch(
-      `/__lab/rename?from=${encodeURIComponent(from)}&to=${encodeURIComponent(destination)}`,
-      { method: 'POST' },
-    )
-    if (res.status === 409) throw new Error(`${destination} já existe.`)
-    await expectOk(res)
-    const moved = ((await res.json()) as { path: string }).path // normalized
+    const moved = await backend.renameFile(from, destination) // normalized
     forget(from) // a pending auto-save must not target the old path
     await refreshFiles()
     navigate(moved)
@@ -176,7 +162,7 @@ export function App() {
     try {
       // A pending (or on-leave) auto-save would otherwise recreate the file.
       discardChanges(file)
-      await expectOk(await labFetch(fileUrl(file), { method: 'DELETE' }))
+      await backend.deleteFile(file)
       forget(file)
       const refreshed = await refreshFiles()
       const next = SECTIONS.flatMap((s) => refreshed[s])
@@ -240,11 +226,12 @@ export function App() {
             onDelete={() => void deleteFile(current)}
           />
         ) : (
-          files && (
+          (files || filesError) && (
             <p className="empty">
-              {current
-                ? `Arquivo não encontrado: ${current}`
-                : 'Crie um arquivo na barra lateral.'}
+              {filesError ??
+                (current
+                  ? `Arquivo não encontrado: ${current}`
+                  : 'Crie um arquivo na barra lateral.')}
             </p>
           )
         )}

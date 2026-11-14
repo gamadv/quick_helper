@@ -1,65 +1,19 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
+import { collectTypes, listFiles, resolveLabPath, toPosix } from './files.ts'
 import {
   CODE_FILE,
+  IGNORED_PATH,
   LAB_HEADER,
   NODE_SCRIPT,
-  SECTIONS,
   sectionOf,
-  type LabFiles,
   type RunMessage,
 } from './shared.ts'
-
-// Type definitions fed to the in-browser editor so it can type-check React and Node code.
-const TYPE_PACKAGES = [
-  '@types/react',
-  '@types/react-dom',
-  '@types/node',
-  'csstype',
-  'undici-types',
-]
-
-const IGNORED = /(^|\/)(\.|node_modules(\/|$))/
-
-const toPosix = (p: string) => p.split(path.sep).join('/')
-
-function walk(dir: string, skip?: RegExp): string[] {
-  if (!existsSync(dir)) return []
-  return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) =>
-      toPosix(path.relative(dir, path.join(entry.parentPath, entry.name))),
-    )
-    .filter((rel) => !skip?.test(rel))
-}
-
-function listFiles(root: string): LabFiles {
-  const byDirThenName = (a: string, b: string) =>
-    path.posix.dirname(a).localeCompare(path.posix.dirname(b)) ||
-    a.localeCompare(b)
-  const entries = SECTIONS.map((section) => [
-    section,
-    walk(path.join(root, section), IGNORED)
-      .map((rel) => `${section}/${rel}`)
-      .sort(byDirThenName),
-  ])
-  return Object.fromEntries(entries)
-}
-
-/** Resolves a client-supplied path, allowing only files inside node/, pure/ or react/. */
-function resolveLabPath(root: string, file: string | null) {
-  if (!file) return undefined
-  const abs = path.resolve(root, file)
-  const rel = toPosix(path.relative(root, abs))
-  if (!sectionOf(rel) || !rel.includes('/') || IGNORED.test(rel))
-    return undefined
-  return { abs, rel }
-}
 
 async function readBody(req: IncomingMessage) {
   const chunks: Buffer[] = []
@@ -183,20 +137,7 @@ export function lab(): Plugin {
         },
 
         '/types': (_req, res) => {
-          typesJson ??= JSON.stringify(
-            Object.fromEntries(
-              TYPE_PACKAGES.flatMap((pkg) => {
-                const dir = path.join(root, 'node_modules', pkg)
-                // ts5.x/ folders are typesVersions fallbacks that would clash with the main files.
-                return walk(dir, /(^|\/)(ts\d|node_modules)/)
-                  .filter((rel) => rel.endsWith('.d.ts'))
-                  .map((rel) => [
-                    `file:///node_modules/${pkg}/${rel}`,
-                    readFileSync(path.join(dir, rel), 'utf8'),
-                  ])
-              }),
-            ),
-          )
+          typesJson ??= JSON.stringify(collectTypes(root))
           res.setHeader('Content-Type', 'application/json')
           res.end(typesJson)
         },
@@ -341,7 +282,7 @@ export function lab(): Plugin {
       // Lets the UI re-run node scripts and refresh editor buffers changed outside the lab.
       server.watcher.on('change', (abs) => {
         const file = relOf(abs)
-        if (sectionOf(file) && !IGNORED.test(file))
+        if (sectionOf(file) && !IGNORED_PATH.test(file))
           server.ws.send('lab:change', { file })
       })
     },

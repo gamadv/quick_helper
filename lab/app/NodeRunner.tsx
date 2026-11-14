@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { NODE_SCRIPT, type RunMessage } from '../shared.ts'
-import { labFetch } from './api.ts'
+import { NODE_SCRIPT } from '../shared.ts'
+import { backend } from './backend/index.ts'
 import { Toolbar } from './Toolbar.tsx'
 import { useStoredState } from './useStoredState.ts'
 
@@ -95,24 +95,12 @@ export function NodeRunner({ file }: { file: string }) {
     resetOutput()
     setStatus({ state: 'running' })
 
+    let exited = false
     try {
-      const res = await labFetch(
-        `/__lab/run?file=${encodeURIComponent(file)}`,
-        { signal: controller.signal },
-      )
-      if (!res.ok || !res.body) throw new Error(await res.text())
-
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
-      let buffer = ''
-      let exited = false
-      for (;;) {
-        const { value, done } = await reader.read()
-        if (done) break
-        const lines = (buffer + value).split('\n')
-        buffer = lines.pop() ?? ''
-        for (const line of lines) {
+      await backend.run(
+        file,
+        (msg) => {
           if (controller.signal.aborted) return
-          const msg = JSON.parse(line) as RunMessage
           if (msg.type === 'exit') {
             exited = true
             cancelAnimationFrame(frame.current)
@@ -121,9 +109,10 @@ export function NodeRunner({ file }: { file: string }) {
           } else {
             push({ stream: msg.type, text: msg.data })
           }
-        }
-      }
-      if (!exited) setStatus({ state: 'stopped' })
+        },
+        controller.signal,
+      )
+      if (!exited && !controller.signal.aborted) setStatus({ state: 'stopped' })
     } catch (err) {
       if (controller.signal.aborted) return
       push({ stream: 'stderr', text: String(err) })
@@ -136,7 +125,7 @@ export function NodeRunner({ file }: { file: string }) {
     setStatus({ state: 'stopped' })
   }
 
-  // Run on open; abort (and kill the process) when switching files or leaving.
+  // Run on open; abort (and stop the script) when switching files or leaving.
   // `run` only changes with `file`, and this component is keyed by file, so this runs once.
   useEffect(() => {
     if (autoRun) void run()
@@ -148,18 +137,16 @@ export function NodeRunner({ file }: { file: string }) {
 
   // Re-run whenever a script under node/ is saved (from the lab editor or elsewhere).
   useEffect(() => {
-    const hot = import.meta.hot
-    if (!autoRun || !hot) return
+    if (!autoRun) return
     let timer: ReturnType<typeof setTimeout>
-    const onChange = ({ file: changed }: { file: string }) => {
+    const unsubscribe = backend.onFileChange((changed) => {
       if (!changed.startsWith('node/') || !NODE_SCRIPT.test(changed)) return
       clearTimeout(timer)
       timer = setTimeout(() => void run(), 100)
-    }
-    hot.on('lab:change', onChange)
+    })
     return () => {
       clearTimeout(timer)
-      hot.off('lab:change', onChange)
+      unsubscribe()
     }
   }, [autoRun, run])
 

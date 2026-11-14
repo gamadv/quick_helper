@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
   type FormEvent,
 } from 'react'
+import { backend } from './backend/index.ts'
 import { monaco } from './monaco.ts'
 import { Toolbar } from './Toolbar.tsx'
 import { useStoredState } from './useStoredState.ts'
@@ -258,15 +259,15 @@ export function Editor({
         >
           Salvar
         </button>
-        <button
-          type="button"
-          title="Abrir no editor do sistema (VS Code)"
-          onClick={() =>
-            fetch(`/__open-in-editor?file=${encodeURIComponent(file)}`)
-          }
-        >
-          VS Code
-        </button>
+        {backend.openInEditor && (
+          <button
+            type="button"
+            title="Abrir no editor do sistema (VS Code)"
+            onClick={() => backend.openInEditor?.(file)}
+          >
+            VS Code
+          </button>
+        )}
         <button type="button" className="danger" onClick={onDelete}>
           Excluir
         </button>
